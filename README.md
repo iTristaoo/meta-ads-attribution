@@ -5,8 +5,9 @@
 [![n8n](https://img.shields.io/badge/n8n-EA4B71?logo=n8n&logoColor=white)](https://n8n.io)
 ![Meta Graph API](https://img.shields.io/badge/Meta_Graph_API-v25.0-0866FF?logo=meta&logoColor=white)
 [![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
+![Status](https://img.shields.io/badge/status-produção-success)
 
-> 🔒 **Case anonimizado.** Sem nome de cliente, credenciais ou dados reais.
+> 🔒 **Case anonimizado.** Sem nome de cliente, credenciais ou dados reais. (Nomes de tabela são ilustrativos.)
 
 ---
 
@@ -33,11 +34,11 @@ flowchart TD
       AD[📢 Lead clica no anúncio] -->|etiqueta escondida no WhatsApp| HOOK[Fluxo de entrada]
       HOOK --> GAPI[Meta Graph API<br/>detalhes do anúncio]
       GAPI --> ORG[Organiza: campanha,<br/>conjunto, criativo, ctwa_clid]
-      ORG --> TOUCH[(lead_touches<br/>+ ficha no CRM)]
+      ORG --> TOUCH[(atribuicao_leads<br/>+ ficha no CRM)]
     end
     subgraph "Gasto (diário)"
       SCHED[⏰ Schedule diário] -->|por clínica| INS[Marketing API<br/>act_.../insights]
-      INS -->|spend, impressions, clicks| SPEND[(meta_spend_daily)]
+      INS -->|spend, impressions, clicks| SPEND[(gasto_diario)]
     end
     TOUCH --> ROI[💰 CPL / ROAS reais]
     SPEND --> ROI
@@ -51,7 +52,7 @@ flowchart TD
 - **Deduplicação com cache:** marca em Redis quem já foi classificado, pra não reconsultar a Graph API à toa (e respeitar rate limit).
 - **Janela de propagação:** espera alguns segundos antes de re-buscar o contato/oportunidade, dando tempo da Meta e do CRM propagarem.
 - **Multi-tenant:** cada clínica tem seu próprio access token (idealmente **System User token sem expiração**), resolvido por configuração na hora da chamada.
-- **Rate limit consciente:** leitura dos headers `X-Business-Use-Case-Usage` / `X-App-Usage` para back-off antes de estourar o limite.
+- **Rate limit mapeado:** tratamento dos headers `X-Business-Use-Case-Usage` / `X-App-Usage` para back-off — desenhado a partir da documentação da Meta API, pronto pra plugar nas chamadas de insights.
 - **Versão fixada da API** (`/v25.0/`) — nunca usa URL sem versão, que cairia na versão mais antiga suportada.
 
 > 📚 Este case incluiu mapear **toda a superfície da Meta Graph API** relevante para clínicas — Marketing API, Lead Ads, WhatsApp Cloud API, Conversions API (CAPI), Webhooks e Business Manager — com escopos, rate limits e tratamento de erros (#190, #17, #100, etc.).
@@ -62,20 +63,29 @@ flowchart TD
 |---|---|
 | Coleta / orquestração | n8n (Schedule + HTTP) |
 | Dados de anúncio | Meta Graph API v25.0 (Marketing API) |
-| Armazenamento | Supabase (`lead_touches`, `meta_spend_daily`) |
+| Armazenamento | Supabase (tabelas de atribuição e gasto diário) |
 | Cache | Redis |
 | Atribuição | click-to-WhatsApp (`ctwa_clid`) |
 
 ## 📈 Resultados
 
-> Exemplos do que medir:
-> - 💰 Visibilidade de **CPL real** (custo por lead que virou conversa)
-> - 📊 ROAS por campanha, cruzando gasto × receita
-> - ✂️ Corte de orçamento em campanhas que traziam clique mas não paciente
+- 💰 **CPL real** — custo por lead que de fato virou conversa, não por clique.
+- 📊 **ROAS por campanha**, cruzando gasto × receita.
+- ✂️ Permite cortar verba de campanha que traz clique mas não paciente.
+
+<!-- iTristaoo: se tiver número real, some aqui (ex: "redução de X% no CPL"). Não invente. -->
 
 ---
 
 ## 🔗 Projetos relacionados
 
 - [ai-receptionist-clinics](https://github.com/iTristaoo/ai-receptionist-clinics) — onde a atribuição é capturada no primeiro contato
-- [multitenant-clinic-dashboard](https://github.com/iTristaoo/multitenant-clinic-dashboard) — onde os números de ROI são exibidos
+- [multitenant-clinic-dashboard](https://github.com/iTristaoo/multitenant-clinic-dashboard) — painel multi-clínica do mesmo ecossistema
+
+---
+
+## 📲 Quer um agente desses no seu negócio?
+
+**Construo automações e agentes de IA sob medida.** Bora conversar — me chama.
+
+<!-- iTristaoo: troque pelos seus links reais → ex: [WhatsApp](https://wa.me/55SEUNUMERO) · [Email](mailto:seu@email.com) -->
